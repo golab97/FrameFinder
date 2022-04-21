@@ -13,12 +13,13 @@ namespace FrameFinder
         readonly List<SequenceItem> _sequenceItems = new();
         public bool PrefixExist { get; private set; } = false;
         public bool SuffixExist { get; private set; } = false;
+        public bool DateLenghtExist { get; private set; } = false;
         public FinderBuilder()
         {
 
         }
 
-        public FinderBuilder AddPrefix(byte[] value)
+        public FinderBuilder AddPrefix(IEnumerable<byte> value)
         {
             //if (!IsTypeSupported(value))
             //    return this;
@@ -30,15 +31,15 @@ namespace FrameFinder
             var item = new SequenceItem("Prefix",
                     SequenceItemType.Constant,
                     InSequenceRole.Prefix,
-                    value);
+                    value.ToArray());
 
             _sequenceItems.Add(item);
 
-            if (_sequenceItems.Find(x => x.ItemRole == InSequenceRole.Prefix) is { }) PrefixExist = true;
+            if (_sequenceItems.Where(x => x.ItemRole == InSequenceRole.Prefix).Count() == 1) PrefixExist = true;
 
             return this;
         }
-        public FinderBuilder AddSuffix(byte[] value)
+        public FinderBuilder AddSuffix(IEnumerable<byte> value)
         {
             if (SuffixExist)
                 return this;
@@ -48,11 +49,28 @@ namespace FrameFinder
             var item = new SequenceItem("Suffix",
                     SequenceItemType.Constant,
                     InSequenceRole.Suffix,
-                    value);
+                    value.ToArray());
 
             _sequenceItems.Add(item);
 
-            if (_sequenceItems.Find(x => x.ItemRole == InSequenceRole.Prefix) is { }) SuffixExist = true;
+            if (_sequenceItems.Where(x => x.ItemRole == InSequenceRole.Suffix).Count()==1) SuffixExist = true;
+
+            return this;
+        }
+
+        public FinderBuilder AddDataField(string fieldName, uint variableSizeInByte)
+        {
+
+            if (_sequenceItems.Where(x => x.Name == fieldName).Any())
+                throw new FinderBuilderException($"Sequence contains {fieldName} field.");
+
+            var item = new SequenceItem(fieldName,
+                   SequenceItemType.Data,
+                   InSequenceRole.Data,
+                   null,
+                   variableSizeInByte);
+
+            _sequenceItems.Add(item);
 
             return this;
         }
@@ -69,7 +87,14 @@ namespace FrameFinder
 
             var item = new SequenceItem("DataLenghtItem",
                    SequenceItemType.Variable,
-                   InSequenceRole.DataLenght);
+                   InSequenceRole.DataLenght,
+                   null,
+                   variableSizeInByte);
+
+            _sequenceItems.Add(item);
+
+            if (_sequenceItems.Find(x => x.ItemRole == InSequenceRole.DataLenght) is { })
+                DateLenghtExist =true;
 
             return this;
         }
@@ -101,21 +126,28 @@ namespace FrameFinder
                     {
                         throw new FinderBuilderException("Sequence contains no suffix.");
                     }
-                    SequenceItem item = new ("Data",
-                        SequenceItemType.Data,
-                        InSequenceRole.Data);
-                    if(_sequenceItems.Count!=2)
-                    {
-                        throw new FinderBuilderException("Sequence contains more items than preffix and suffix.");
-                    }
-                    _sequenceItems.Insert(1,item);
+                    //SequenceItem item = new ("Data",
+                    //    SequenceItemType.Data,
+                    //    InSequenceRole.Data);
+                    //if(_sequenceItems.Count!=2)
+                    //{
+                    //    throw new FinderBuilderException("Sequence contains more items than preffix and suffix.");
+                    //}
+                    //_sequenceItems.Insert(1,item);
                     break;
 
                 case BuilderOptions.PrefixAndFixedLenght:
                     throw new NotImplementedException();
 
                 case BuilderOptions.PrefixAndDynamicLenght:
-                    throw new NotImplementedException();
+                    if (!PrefixExist)
+                    {
+                        throw new FinderBuilderException("Sequence contains no prefix.");
+                    }
+
+
+                    break;
+
             }
 
 

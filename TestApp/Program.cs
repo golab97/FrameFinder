@@ -7,48 +7,42 @@ var dat = DateTime.Now;
 
 Console.WriteLine(dat.ToString("O"));
 
-byte[] frame = { 0xa5, 0x55, 0x10, 0xaa, 10, 0xfa, 0xfa };
 
-Finder? finder = new FinderBuilder()
-    .AddPrefix(frame.ToList().Take(4).ToArray())
-    .AddSuffix(frame.ToList().TakeLast(3).ToArray())
-    .Build(FinderBuilder.BuilderOptions.PrefixAndSuffix);
 
-if (finder is null)
-    return;
+#region prefixandsuffix test
 
-finder.FrameFound += (s, e) =>
- {
-     var frame = finder.GetFrame();
-     if (frame is null)
-         return;
 
-     global::System.Console.WriteLine(frame.ToString(""));
- };
-;
+//byte[] frame = { 0xa5, 0x55, 0x10, 0xaa, 10 ,10, 0xfa, 0xfa };
 
-List<byte> bytesToFeed = new();
+//Finder? finder = new FinderBuilder()
+//    .AddPrefix(frame.ToList().Take(4).ToArray())
+//    .AddSuffix(frame.ToList().TakeLast(3).ToArray())
+//    .Build(FinderBuilder.BuilderOptions.PrefixAndSuffix);
 
-Random rng = new();
-int randomFrameCount = rng.Next(0,byte.MaxValue);
-for (int i = 0; i < randomFrameCount; i++)
-{
-    int randomBytesBetween=rng.Next(0,byte.MaxValue);
+//if (finder is null)
+//    return;
 
-    for (int ii = 0; ii < randomBytesBetween; ii++)
-    {
-        bytesToFeed.Add((byte)rng.Next(0, byte.MaxValue));
-    }
 
-    var randomFrame = RandomThings.Get_PrefixAndSuffixFrame(frame.ToList().Take(4).ToArray(), frame.ToList().TakeLast(3).ToArray(), (uint)rng.Next(0, byte.MaxValue));
+//finder.FeedMe(frame);
+//finder.RunFinderTask();
+#endregion
 
-    bytesToFeed.AddRange(randomFrame.ToArray());
 
-}
+#region prefixAndDynamicLen test
+byte[] frame = { 10, 50, 2, 0xa5, 0x55, 0x10, 0xaa, 0x10, 1, 4, 0, 0, 1, 2, 3, 0xfa, 0xfa };
 
-finder.FeedMe(bytesToFeed);
+var finder = new FinderBuilder()
+    .AddPrefix(frame.ToList().Skip(3).Take(4))
+    .AddDataField("Sender", 1)
+    .AddDataField("Receiver", 1)
+    .AddDynamicDataLenght(2)
+    .AddDataField("Crc16", 2)
+    .Build(FinderBuilder.BuilderOptions.PrefixAndDynamicLenght);
+
+finder.FeedMe(frame);
 finder.RunFinderTask();
 
+#endregion
 while (true)
 {
     var readed = Console.ReadLine();

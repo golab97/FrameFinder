@@ -21,7 +21,7 @@ namespace FrameFinder
 
         public byte[] Value = new byte[0];
 
-        public SequenceItem(string name, SequenceItemType type, InSequenceRole role, byte[]? value=null)
+        public SequenceItem(string name, SequenceItemType type, InSequenceRole role, byte[]? value=null,uint ?sizeInBytes=null)
         {
             this.Name = name;
             
@@ -40,11 +40,20 @@ namespace FrameFinder
             }
             else if(this.ItemRole== InSequenceRole.DataLenght)
             {
+                if (sizeInBytes is null)
+                    throw new SequenceItemException($"Data item for field {name} have no defined size");
 
+                this.Size = (int)sizeInBytes;
             }
             else if(this.ItemRole== InSequenceRole.Data)
             {
 
+                if (sizeInBytes is null)
+                {
+                    throw new SequenceItemException($"Data item for field {name} have no defined size");
+                }
+
+                this.Size = (int)sizeInBytes;
             }
         }
 
@@ -87,6 +96,15 @@ namespace FrameFinder
             Suffix,
             DataLenght,
             Data
+        }
+
+        public class SequenceItemException : Exception
+        {
+            public override string Message { get; } = "";
+            public SequenceItemException(string message)
+            {
+                this.Message = message;
+            }
         }
     }
 }
